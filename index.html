@@ -5,26 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>防跌用藥衛教海報</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 主要 CDN 來源 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
         body {
             font-family: 'Noto Sans TC', sans-serif;
-            background-color: #f3f4f6;
+            background-color: #e5e7eb;
         }
-        /* 列印時的樣式設定，確保印出來是一張漂亮的A4海報 */
+        /* 列印時的樣式設定 */
         @media print {
             @page {
                 size: A4 portrait;
                 margin: 1cm;
             }
             html, body {
-                height: auto !important;
-                min-height: auto !important;
                 background-color: white !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
-                /* 強制取消彈性排版，避免列印時只出現第一頁 */
                 display: block !important;
                 padding: 0 !important;
                 margin: 0 !important;
@@ -34,11 +32,7 @@
             }
             .poster-container {
                 box-shadow: none !important;
-                max-width: 100% !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                border-top: none !important;
-                /* 非常重要：取消隱藏溢出，否則多頁內容會被切斷 */
+                margin: 0 auto !important;
                 overflow: visible !important;
                 position: static !important;
             }
@@ -46,104 +40,129 @@
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
             }
-            /* 針對列印調整網格設定，確保欄位不會被壓縮 */
-            .grid {
-                display: grid !important;
-            }
         }
         
-        /* 自訂高亮過渡動畫 */
+        /* 直式手機版面強制寬度 */
+        .poster-container {
+            width: 100%;
+            max-width: 400px; /* 模擬手機寬度，達到接近 9:16 的視覺感 */
+            margin: 0 auto;
+        }
+
+        /* 自訂動態高亮過渡動畫 */
         .med-item {
-            transition: all 0.3s ease-in-out;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: left center;
         }
         .category-card {
-            transition: opacity 0.3s ease-in-out;
+            transition: all 0.4s ease-in-out;
+            transform-origin: top center;
+        }
+
+        /* 標記狀態：放大、粗體、醒目 */
+        .is-selected {
+            font-size: 1.15rem !important;
+            line-height: 1.4 !important;
+            font-weight: 900 !important;
+            background-color: #fde047 !important; /* bg-yellow-300 */
+            border: 2px solid #ef4444 !important;
+            border-radius: 0.5rem;
+            padding: 0.5rem !important;
+            margin: 0.5rem 0 !important;
+            transform: scale(1.02);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            color: #7f1d1d !important;
+            z-index: 10;
+            position: relative;
+        }
+        .is-selected span {
+            color: #7f1d1d !important; /* 強制覆蓋內部灰色 */
         }
     </style>
 </head>
-<body class="p-4 md:p-8 flex justify-center items-start min-h-screen">
+<body class="p-2 md:p-8 flex justify-center items-start min-h-screen">
 
     <!-- 護理師選單對話框 (Modal) -->
     <div id="medModal" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden justify-center items-center p-4 no-print" data-html2canvas-ignore="true">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-[pulse_0.2s_ease-out]">
-            <div class="bg-indigo-600 text-white px-6 py-4 flex justify-between items-center">
-                <h3 class="text-xl font-bold">🩺 護理師專用：標記病人目前用藥</h3>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden animate-[pulse_0.2s_ease-out]">
+            <div class="bg-indigo-600 text-white px-5 py-3 flex justify-between items-center">
+                <h3 class="text-lg font-bold">🩺 標記病人用藥</h3>
                 <button onclick="closeModal()" class="text-white hover:text-red-200 text-2xl font-black">&times;</button>
             </div>
             
-            <div class="p-6 overflow-y-auto flex-1 bg-gray-50" id="modalContent">
+            <div class="p-4 overflow-y-auto flex-1 bg-gray-50 text-sm" id="modalContent">
                 <!-- JavaScript 會自動將分類與藥物選項塞入這裡 -->
             </div>
             
-            <div class="bg-gray-100 px-6 py-4 border-t flex justify-between items-center">
-                <button onclick="resetHighlights()" class="text-gray-600 hover:text-red-600 font-bold px-4 py-2 rounded transition">
-                    🔄 恢復預設 (清除標記)
+            <div class="bg-gray-100 px-4 py-3 border-t flex justify-between items-center gap-2">
+                <button onclick="resetHighlights()" class="text-gray-500 hover:text-red-600 font-bold px-2 py-2 rounded text-sm transition">
+                    🔄 清除
                 </button>
-                <div class="space-x-2">
-                    <button onclick="closeModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg transition">
+                <div class="space-x-2 flex">
+                    <button onclick="closeModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm transition">
                         取消
                     </button>
-                    <button onclick="applySelection()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-8 rounded-lg shadow-lg transition">
-                        ✅ 套用標記
+                    <button onclick="applySelection()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg shadow-lg text-sm transition">
+                        ✅ 套用
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 海報主體 -->
-    <div class="poster-container bg-white max-w-5xl w-full rounded-2xl shadow-2xl overflow-hidden border-t-8 border-red-500 relative">
+    <!-- 海報主體 (限制寬度 400px，創造手機直式視覺) -->
+    <div class="poster-container bg-white rounded-2xl shadow-2xl overflow-hidden border-t-8 border-red-500 relative flex flex-col">
         
-        <!-- 動態警語橫幅 (預設隱藏，當有標記藥物時顯示) -->
-        <div id="focusAlert" class="hidden bg-yellow-400 text-red-800 text-center py-2 px-4 font-black text-lg md:text-xl border-b-4 border-yellow-500 animate-pulse flex items-center justify-center gap-2">
-            🚨 提醒您！以下有「黃色底色」標記的藥物為您正在服用的高危險藥物，請特別留意副作用！
+        <!-- 動態警語橫幅 -->
+        <div id="focusAlert" class="hidden bg-yellow-400 text-red-800 text-center py-2 px-3 font-black text-sm border-b-4 border-yellow-500 animate-pulse flex items-center justify-center gap-1">
+            🚨 提醒！黃底標記為您目前服用的高風險藥物！
         </div>
 
         <!-- 海報標題區 -->
-        <div class="bg-red-50 px-6 py-8 text-center border-b border-red-100">
-            <h1 class="text-3xl md:text-5xl font-black text-red-600 mb-3 flex items-center justify-center gap-3">
-                <span class="text-4xl md:text-5xl">⚠️</span> 小心跌倒！起身請慢半拍
+        <div class="bg-red-50 px-4 py-5 text-center border-b border-red-100">
+            <h1 class="text-2xl font-black text-red-600 mb-2 flex items-center justify-center gap-2">
+                <span class="text-3xl">⚠️</span> 小心跌倒！起身請慢
             </h1>
-            <h2 class="text-xl md:text-2xl font-bold text-gray-800">
-                腫瘤病房常見「跌倒風險」藥物指南
+            <h2 class="text-lg font-bold text-gray-800">
+                腫瘤病房用藥防跌指南
             </h2>
-            <p class="mt-2 text-gray-600 font-medium text-lg">
-                若您住院期間有服用以下藥物，請務必注意副作用並配合防跌措施！
+            <p class="mt-1 text-gray-600 font-medium text-xs">
+                若有服用以下藥物，請務必配合防跌措施！
             </p>
             
             <!-- 操作按鈕區 -->
-            <div class="mt-6 flex flex-wrap justify-center gap-3 no-print" data-html2canvas-ignore="true">
-                <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-5 rounded-full shadow-md transition duration-300 flex items-center gap-2 border-2 border-indigo-300">
-                    🎯 標記病人藥物 (護理師)
+            <div class="mt-4 flex flex-col gap-2 no-print" data-html2canvas-ignore="true">
+                <button onclick="openModal()" class="w-full justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl shadow-md transition duration-300 flex items-center gap-2 border-2 border-indigo-300">
+                    🎯 標記病人藥物
                 </button>
-                <button onclick="downloadPoster()" id="downloadBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-full shadow-md transition duration-300">
-                    ⬇️ 下載圖片
+                <button onclick="downloadPoster()" id="downloadBtn" class="w-full justify-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow-md transition duration-300 flex items-center gap-2">
+                    ⬇️ 下載直式圖片 (可分享)
                 </button>
             </div>
         </div>
 
-        <!-- 藥物分類網格區 -->
-        <div class="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-gray-50">
+        <!-- 藥物分類網格區 (強制單欄直式排版 grid-cols-1) -->
+        <div class="p-4 grid grid-cols-1 gap-3 bg-gray-50 flex-1">
 
             <!-- 1. 止痛藥 -->
             <div class="category-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden page-break-inside-avoid">
-                <div class="category-title bg-red-100 px-4 py-2 font-bold text-red-800 flex items-center gap-2 text-lg">
+                <div class="category-title bg-red-100 px-3 py-1.5 font-bold text-red-800 flex items-center gap-2 text-base">
                     💊 1. 強效止痛藥
                 </div>
-                <div class="p-4">
-                    <p class="text-sm font-bold text-red-500 mb-3">吃完易昏沉、想睡、神智不清</p>
-                    <ul class="space-y-1 text-gray-700 font-medium">
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m1-1" data-label="Codeine (可待因)"><span>Codeine</span> <span class="text-gray-500">可待因</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m1-2" data-label="Fentanyl (吩坦尼)"><span>Fentanyl</span> <span class="text-gray-500">吩坦尼</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m1-3" data-label="Morphine (嗎啡)"><span>Morphine</span> <span class="text-gray-500">嗎啡</span></li>
-                        <li class="med-item flex flex-col border-b pb-1 px-1 rounded" data-id="m1-4" data-label="OxyContin / OxyNorm">
+                <div class="p-3">
+                    <p class="text-sm font-bold text-red-600 mb-1.5">吃完易昏沉、想睡、神智不清</p>
+                    <ul class="space-y-1 text-gray-700 font-medium text-sm">
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m1-1" data-label="Codeine (可待因)"><span>Codeine</span> <span class="text-gray-500">可待因</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m1-2" data-label="Fentanyl (吩坦尼)"><span>Fentanyl</span> <span class="text-gray-500">吩坦尼</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m1-3" data-label="Morphine (嗎啡)"><span>Morphine</span> <span class="text-gray-500">嗎啡</span></li>
+                        <li class="med-item flex flex-col border-b border-gray-100 pb-1 rounded" data-id="m1-4" data-label="OxyContin / OxyNorm">
                             <span class="flex justify-between"><span>OxyContin</span> <span class="text-gray-500">奧施康定</span></span>
-                            <span class="flex justify-between text-sm text-gray-500"><span>OxyNorm</span> <span>奧諾美</span></span>
+                            <span class="flex justify-between text-xs text-gray-400"><span>OxyNorm</span> <span>奧諾美</span></span>
                         </li>
-                        <li class="med-item flex flex-col pb-1 px-1 rounded" data-id="m1-5" data-label="Muaction / Tramal / Utraphen">
+                        <li class="med-item flex flex-col pb-1 rounded" data-id="m1-5" data-label="Muaction/Tramal/Utraphen">
                             <span class="flex justify-between"><span>Muaction</span> <span class="text-gray-500">妙而通</span></span>
-                            <span class="flex justify-between text-sm text-gray-500"><span>Tramal</span> <span>曲馬多</span></span>
-                            <span class="flex justify-between text-sm text-gray-500"><span>Utraphen</span> <span>立除痛</span></span>
+                            <span class="flex justify-between text-xs text-gray-400"><span>Tramal</span> <span>曲馬多</span></span>
+                            <span class="flex justify-between text-xs text-gray-400"><span>Utraphen</span> <span>立除痛</span></span>
                         </li>
                     </ul>
                 </div>
@@ -151,167 +170,167 @@
 
             <!-- 2. 安眠藥 -->
             <div class="category-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden page-break-inside-avoid">
-                <div class="category-title bg-indigo-100 px-4 py-2 font-bold text-indigo-800 flex items-center gap-2 text-lg">
+                <div class="category-title bg-indigo-100 px-3 py-1.5 font-bold text-indigo-800 flex items-center gap-2 text-base">
                     🌙 2. 安眠藥
                 </div>
-                <div class="p-4">
-                    <p class="text-sm font-bold text-indigo-500 mb-3">殘留睡意、全身無力、動作遲鈍</p>
-                    <ul class="space-y-1 text-gray-700 font-medium">
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m2-1" data-label="Alpraline (柔安)"><span>Alpraline</span> <span class="text-gray-500">柔安</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m2-2" data-label="Lendormin (戀多眠)"><span>Lendormin</span> <span class="text-gray-500">戀多眠</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m2-3" data-label="Rivotril (利福全)"><span>Rivotril</span> <span class="text-gray-500">利福全</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m2-4" data-label="Eurodin (悠樂丁)"><span>Eurodin</span> <span class="text-gray-500">悠樂丁</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m2-5" data-label="Ativan / Anxicam (安定文/安祈平)"><span>Ativan / Anxicam</span> <span class="text-gray-500">安定文/安祈平</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m2-6" data-label="Dormicum (導眠靜)"><span>Dormicum</span> <span class="text-gray-500">導眠靜</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m2-7" data-label="Stilnox (使蒂諾斯)"><span>Stilnox</span> <span class="text-gray-500">使蒂諾斯</span></li>
-                        <li class="med-item flex justify-between pb-1 px-1 rounded" data-id="m2-8" data-label="Imovane (宜眠安)"><span>Imovane</span> <span class="text-gray-500">宜眠安</span></li>
+                <div class="p-3">
+                    <p class="text-sm font-bold text-indigo-600 mb-1.5">殘留睡意、全身無力、動作遲鈍</p>
+                    <ul class="space-y-1 text-gray-700 font-medium text-sm">
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m2-1" data-label="Alpraline (柔安)"><span>Alpraline</span> <span class="text-gray-500">柔安</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m2-2" data-label="Lendormin (戀多眠)"><span>Lendormin</span> <span class="text-gray-500">戀多眠</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m2-3" data-label="Rivotril (利福全)"><span>Rivotril</span> <span class="text-gray-500">利福全</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m2-4" data-label="Eurodin (悠樂丁)"><span>Eurodin</span> <span class="text-gray-500">悠樂丁</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m2-5" data-label="Ativan/Anxicam (安定文/安祈平)"><span>Ativan/Anxicam</span> <span class="text-gray-500 shrink-0 ml-2">安定文/安祈平</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m2-6" data-label="Dormicum (導眠靜)"><span>Dormicum</span> <span class="text-gray-500">導眠靜</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m2-7" data-label="Stilnox (使蒂諾斯)"><span>Stilnox</span> <span class="text-gray-500">使蒂諾斯</span></li>
+                        <li class="med-item flex justify-between pb-1 rounded" data-id="m2-8" data-label="Imovane (宜眠安)"><span>Imovane</span> <span class="text-gray-500">宜眠安</span></li>
                     </ul>
                 </div>
             </div>
 
             <!-- 3. 鎮靜劑 -->
             <div class="category-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden page-break-inside-avoid">
-                <div class="category-title bg-blue-100 px-4 py-2 font-bold text-blue-800 flex items-center gap-2 text-lg">
+                <div class="category-title bg-blue-100 px-3 py-1.5 font-bold text-blue-800 flex items-center gap-2 text-base">
                     🧠 3. 鎮靜劑
                 </div>
-                <div class="p-4">
-                    <p class="text-sm font-bold text-blue-500 mb-3">反應變慢、手腳不聽使喚、視力模糊</p>
-                    <ul class="space-y-1 text-gray-700 font-medium">
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m3-1" data-label="Winsumin (穩舒眠)"><span>Winsumin</span> <span class="text-gray-500">穩舒眠</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m3-2" data-label="Binin-U (必寧優)"><span>Binin-U</span> <span class="text-gray-500">必寧優</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m3-3" data-label="Haldol (好度)"><span>Haldol</span> <span class="text-gray-500">好度</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m3-4" data-label="Zyprexa (捷思)"><span>Zyprexa</span> <span class="text-gray-500">捷思</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m3-5" data-label="Novamin (諾安命)"><span>Novamin</span> <span class="text-gray-500">諾安命</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m3-6" data-label="Seroquel (思樂康)"><span>Seroquel</span> <span class="text-gray-500">思樂康</span></li>
-                        <li class="med-item flex justify-between pb-1 px-1 rounded" data-id="m3-7" data-label="Risperdal (理思必妥)"><span>Risperdal</span> <span class="text-gray-500">理思必妥</span></li>
+                <div class="p-3">
+                    <p class="text-sm font-bold text-blue-600 mb-1.5">反應變慢、手腳不聽使喚、視力模糊</p>
+                    <ul class="space-y-1 text-gray-700 font-medium text-sm">
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m3-1" data-label="Winsumin (穩舒眠)"><span>Winsumin</span> <span class="text-gray-500">穩舒眠</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m3-2" data-label="Binin-U (必寧優)"><span>Binin-U</span> <span class="text-gray-500">必寧優</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m3-3" data-label="Haldol (好度)"><span>Haldol</span> <span class="text-gray-500">好度</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m3-4" data-label="Zyprexa (捷思)"><span>Zyprexa</span> <span class="text-gray-500">捷思</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m3-5" data-label="Novamin (諾安命)"><span>Novamin</span> <span class="text-gray-500">諾安命</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m3-6" data-label="Seroquel (思樂康)"><span>Seroquel</span> <span class="text-gray-500">思樂康</span></li>
+                        <li class="med-item flex justify-between pb-1 rounded" data-id="m3-7" data-label="Risperdal (理思必妥)"><span>Risperdal</span> <span class="text-gray-500">理思必妥</span></li>
                     </ul>
                 </div>
             </div>
 
             <!-- 4. 神經痛/抗癲癇 -->
             <div class="category-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden page-break-inside-avoid">
-                <div class="category-title bg-purple-100 px-4 py-2 font-bold text-purple-800 flex items-center gap-2 text-lg">
+                <div class="category-title bg-purple-100 px-3 py-1.5 font-bold text-purple-800 flex items-center gap-2 text-base">
                     ⚡ 4. 神經痛/抗癲癇藥
                 </div>
-                <div class="p-4">
-                    <p class="text-sm font-bold text-purple-500 mb-3">頭暈、嗜睡、全身無力</p>
-                    <ul class="space-y-1 text-gray-700 font-medium">
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m4-1" data-label="Vimpat (維帕特)"><span>Vimpat</span> <span class="text-gray-500">維帕特</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m4-2" data-label="Keppra (優閒)"><span>Keppra</span> <span class="text-gray-500">優閒</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m4-3" data-label="Depakine (帝拔癲)"><span>Depakine</span> <span class="text-gray-500">帝拔癲</span></li>
-                        <li class="med-item flex justify-between pb-1 px-1 rounded" data-id="m4-4" data-label="Lyrica (莉彼喀)"><span>Lyrica</span> <span class="text-gray-500">莉彼喀</span></li>
+                <div class="p-3">
+                    <p class="text-sm font-bold text-purple-600 mb-1.5">頭暈、嗜睡、全身無力</p>
+                    <ul class="space-y-1 text-gray-700 font-medium text-sm">
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m4-1" data-label="Vimpat (維帕特)"><span>Vimpat</span> <span class="text-gray-500">維帕特</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m4-2" data-label="Keppra (優閒)"><span>Keppra</span> <span class="text-gray-500">優閒</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m4-3" data-label="Depakine (帝拔癲)"><span>Depakine</span> <span class="text-gray-500">帝拔癲</span></li>
+                        <li class="med-item flex justify-between pb-1 rounded" data-id="m4-4" data-label="Lyrica (莉彼喀)"><span>Lyrica</span> <span class="text-gray-500">莉彼喀</span></li>
                     </ul>
                 </div>
             </div>
 
             <!-- 5. 肌肉鬆弛劑 -->
             <div class="category-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden page-break-inside-avoid">
-                <div class="category-title bg-orange-100 px-4 py-2 font-bold text-orange-800 flex items-center gap-2 text-lg">
+                <div class="category-title bg-orange-100 px-3 py-1.5 font-bold text-orange-800 flex items-center gap-2 text-base">
                     🦴 5. 肌肉鬆弛劑
                 </div>
-                <div class="p-4">
-                    <p class="text-sm font-bold text-orange-500 mb-3">頭暈、感覺肌肉使不上力</p>
-                    <ul class="space-y-1 text-gray-700 font-medium">
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m5-1" data-label="Befon (倍鬆)"><span>Befon</span> <span class="text-gray-500">倍鬆</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m5-2" data-label="Solaxin (舒肉筋新)"><span>Solaxin</span> <span class="text-gray-500">舒肉筋新</span></li>
-                        <li class="med-item flex justify-between pb-1 px-1 rounded" data-id="m5-3" data-label="Sirdalud (鬆得樂)"><span>Sirdalud</span> <span class="text-gray-500">鬆得樂</span></li>
+                <div class="p-3">
+                    <p class="text-sm font-bold text-orange-600 mb-1.5">頭暈、感覺肌肉使不上力</p>
+                    <ul class="space-y-1 text-gray-700 font-medium text-sm">
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m5-1" data-label="Befon (倍鬆)"><span>Befon</span> <span class="text-gray-500">倍鬆</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m5-2" data-label="Solaxin (舒肉筋新)"><span>Solaxin</span> <span class="text-gray-500">舒肉筋新</span></li>
+                        <li class="med-item flex justify-between pb-1 rounded" data-id="m5-3" data-label="Sirdalud (鬆得樂)"><span>Sirdalud</span> <span class="text-gray-500">鬆得樂</span></li>
                     </ul>
                 </div>
             </div>
 
             <!-- 6. 降血壓藥 -->
             <div class="category-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden page-break-inside-avoid">
-                <div class="category-title bg-rose-100 px-4 py-2 font-bold text-rose-800 flex items-center gap-2 text-lg">
+                <div class="category-title bg-rose-100 px-3 py-1.5 font-bold text-rose-800 flex items-center gap-2 text-base">
                     🩸 6. 降血壓藥
                 </div>
-                <div class="p-4">
-                    <p class="text-sm font-bold text-rose-500 mb-3">突然站起會眼前發黑 (姿勢性低血壓)</p>
-                    <ul class="space-y-1 text-gray-700 font-medium">
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m6-1" data-label="Cordarone (臟得樂)"><span>Cordarone</span> <span class="text-gray-500">臟得樂</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m6-2" data-label="Concor (康肯)"><span>Concor</span> <span class="text-gray-500">康肯</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m6-3" data-label="Dilatrend (達利全)"><span>Dilatrend</span> <span class="text-gray-500">達利全</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m6-4" data-label="Doxaben (可迅)"><span>Doxaben</span> <span class="text-gray-500">可迅</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m6-5" data-label="Stable (血得平)"><span>Stable</span> <span class="text-gray-500">血得平</span></li>
-                        <li class="med-item flex justify-between pb-1 px-1 rounded" data-id="m6-6" data-label="Pronolol (心律整)"><span>Pronolol</span> <span class="text-gray-500">心律整</span></li>
+                <div class="p-3">
+                    <p class="text-sm font-bold text-rose-600 mb-1.5">突然站起會眼前發黑 (姿勢性低血壓)</p>
+                    <ul class="space-y-1 text-gray-700 font-medium text-sm">
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m6-1" data-label="Cordarone (臟得樂)"><span>Cordarone</span> <span class="text-gray-500">臟得樂</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m6-2" data-label="Concor (康肯)"><span>Concor</span> <span class="text-gray-500">康肯</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m6-3" data-label="Dilatrend (達利全)"><span>Dilatrend</span> <span class="text-gray-500">達利全</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m6-4" data-label="Doxaben (可迅)"><span>Doxaben</span> <span class="text-gray-500">可迅</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m6-5" data-label="Stable (血得平)"><span>Stable</span> <span class="text-gray-500">血得平</span></li>
+                        <li class="med-item flex justify-between pb-1 rounded" data-id="m6-6" data-label="Pronolol (心律整)"><span>Pronolol</span> <span class="text-gray-500">心律整</span></li>
                     </ul>
                 </div>
             </div>
 
             <!-- 7. 利尿劑 -->
             <div class="category-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden page-break-inside-avoid">
-                <div class="category-title bg-cyan-100 px-4 py-2 font-bold text-cyan-800 flex items-center gap-2 text-lg">
+                <div class="category-title bg-cyan-100 px-3 py-1.5 font-bold text-cyan-800 flex items-center gap-2 text-base">
                     💧 7. 利尿劑 (消水腫)
                 </div>
-                <div class="p-4">
-                    <p class="text-sm font-bold text-cyan-500 mb-3">常跑廁所易走太快跌倒、血壓降低</p>
-                    <ul class="space-y-1 text-gray-700 font-medium">
-                        <li class="med-item flex flex-col border-b pb-1 px-1 rounded mt-1" data-id="m7-1" data-label="Burinex / Busix">
+                <div class="p-3">
+                    <p class="text-sm font-bold text-cyan-600 mb-1.5">常跑廁所易走太快跌倒、血壓降低</p>
+                    <ul class="space-y-1 text-gray-700 font-medium text-sm">
+                        <li class="med-item flex flex-col border-b border-gray-100 pb-1 rounded" data-id="m7-1" data-label="Burinex / Busix">
                             <span class="flex justify-between"><span>Burinex / Busix</span> <span class="text-gray-500">必尿利 / 必得寧</span></span>
                         </li>
-                        <li class="med-item flex flex-col border-b pb-1 px-1 rounded mt-1" data-id="m7-2" data-label="Lasix / Rasitol">
+                        <li class="med-item flex flex-col border-b border-gray-100 pb-1 rounded" data-id="m7-2" data-label="Lasix / Rasitol">
                             <span class="flex justify-between"><span>Lasix / Rasitol</span> <span class="text-gray-500">滿治 / 來喜妥</span></span>
                         </li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded mt-1" data-id="m7-3" data-label="Mannitol (降腦壓藥)"><span>Mannitol</span> <span class="text-gray-500">降腦壓藥(甘露醇)</span></li>
-                        <li class="med-item flex justify-between pb-1 px-1 rounded mt-1" data-id="m7-4" data-label="Aldactone (亞達客通)"><span>Aldactone</span> <span class="text-gray-500">亞達客通</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m7-3" data-label="Mannitol (降腦壓藥)"><span>Mannitol</span> <span class="text-gray-500 text-xs mt-0.5">降腦壓藥(甘露醇)</span></li>
+                        <li class="med-item flex justify-between pb-1 rounded" data-id="m7-4" data-label="Aldactone (亞達客通)"><span>Aldactone</span> <span class="text-gray-500">亞達客通</span></li>
                     </ul>
                 </div>
             </div>
 
             <!-- 8. 抗憂鬱藥 -->
             <div class="category-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden page-break-inside-avoid">
-                <div class="category-title bg-emerald-100 px-4 py-2 font-bold text-emerald-800 flex items-center gap-2 text-lg">
+                <div class="category-title bg-emerald-100 px-3 py-1.5 font-bold text-emerald-800 flex items-center gap-2 text-base">
                     🌱 8. 抗憂鬱藥
                 </div>
-                <div class="p-4">
-                    <p class="text-sm font-bold text-emerald-500 mb-3">想睡覺、反應變慢、視力模糊</p>
-                    <ul class="space-y-1 text-gray-700 font-medium">
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m8-1" data-label="Duxetine (萬憂停)"><span>Duxetine</span> <span class="text-gray-500">萬憂停</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m8-2" data-label="Epram (抑鬱錠)"><span>Epram</span> <span class="text-gray-500">抑鬱錠</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m8-3" data-label="Juxac (解鬱膠囊)"><span>Juxac</span> <span class="text-gray-500">解鬱膠囊</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m8-4" data-label="Tofranil (妥富腦)"><span>Tofranil</span> <span class="text-gray-500">妥富腦</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m8-5" data-label="Apa-Mirtazapine (安保米塔札平)"><span>Apa-Mirtazapine</span> <span class="text-gray-500">安保米塔札平</span></li>
-                        <li class="med-item flex justify-between border-b pb-1 px-1 rounded" data-id="m8-6" data-label="Mesyrel (美舒鬱)"><span>Mesyrel</span> <span class="text-gray-500">美舒鬱</span></li>
-                        <li class="med-item flex justify-between pb-1 px-1 rounded" data-id="m8-7" data-label="Effexor (速悅)"><span>Effexor</span> <span class="text-gray-500">速悅</span></li>
+                <div class="p-3">
+                    <p class="text-sm font-bold text-emerald-600 mb-1.5">想睡覺、反應變慢、視力模糊</p>
+                    <ul class="space-y-1 text-gray-700 font-medium text-sm">
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m8-1" data-label="Duxetine (萬憂停)"><span>Duxetine</span> <span class="text-gray-500">萬憂停</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m8-2" data-label="Epram (抑鬱錠)"><span>Epram</span> <span class="text-gray-500">抑鬱錠</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m8-3" data-label="Juxac (解鬱膠囊)"><span>Juxac</span> <span class="text-gray-500">解鬱膠囊</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m8-4" data-label="Tofranil (妥富腦)"><span>Tofranil</span> <span class="text-gray-500">妥富腦</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m8-5" data-label="Apa-Mirtazapine"><span>Apa-Mirtazapine</span> <span class="text-gray-500 text-xs shrink-0 ml-1 mt-0.5">安保米塔札平</span></li>
+                        <li class="med-item flex justify-between border-b border-gray-100 pb-1 rounded" data-id="m8-6" data-label="Mesyrel (美舒鬱)"><span>Mesyrel</span> <span class="text-gray-500">美舒鬱</span></li>
+                        <li class="med-item flex justify-between pb-1 rounded" data-id="m8-7" data-label="Effexor (速悅)"><span>Effexor</span> <span class="text-gray-500">速悅</span></li>
                     </ul>
                 </div>
             </div>
 
             <!-- 9. 其他 -->
             <div class="category-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden page-break-inside-avoid">
-                <div class="category-title bg-amber-100 px-4 py-2 font-bold text-amber-800 flex items-center gap-2 text-lg">
+                <div class="category-title bg-amber-100 px-3 py-1.5 font-bold text-amber-800 flex items-center gap-2 text-base">
                     🚽 9. 攝護腺肥大用藥
                 </div>
-                <div class="p-4">
-                    <p class="text-sm font-bold text-amber-500 mb-3">突然站起來時容易血壓低而暈眩</p>
-                    <ul class="space-y-1 text-gray-700 font-medium">
-                        <li class="med-item flex justify-between pb-1 px-1 rounded" data-id="m9-1" data-label="Harnalidge (活路利淨)"><span>Harnalidge</span> <span class="text-gray-500">活路利淨</span></li>
+                <div class="p-3">
+                    <p class="text-sm font-bold text-amber-600 mb-1.5">突然站起來時容易血壓低而暈眩</p>
+                    <ul class="space-y-1 text-gray-700 font-medium text-sm">
+                        <li class="med-item flex justify-between pb-1 rounded" data-id="m9-1" data-label="Harnalidge (活路利淨)"><span>Harnalidge</span> <span class="text-gray-500">活路利淨</span></li>
                     </ul>
                 </div>
             </div>
 
         </div>
 
-        <!-- 底部防跌守則 (動態更新區塊) -->
-        <div id="rulesSection" class="bg-yellow-300 px-6 py-6 md:px-12 md:py-8 border-t-4 border-yellow-400 transition-colors duration-500">
-            <h3 id="rulesTitle" class="text-2xl font-black text-yellow-900 mb-4 flex items-center gap-2">
+        <!-- 底部防跌守則 (動態更新區塊 - 單欄排版) -->
+        <div id="rulesSection" class="bg-yellow-300 px-4 py-5 border-t-4 border-yellow-400 transition-colors duration-500">
+            <h3 id="rulesTitle" class="text-xl font-black text-yellow-900 mb-3 flex items-center gap-2">
                 💡 病房防跌 4 守則
             </h3>
-            <div id="rulesList" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-yellow-900 font-medium text-lg">
-                <div class="flex items-start gap-3">
-                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-8 h-8 flex items-center justify-center font-bold shrink-0">1</span>
-                    <p><strong>起身請放慢：</strong>遵守「躺、坐、站」三階段，在床邊坐穩 1-2 分鐘，不暈再下床。</p>
+            <div id="rulesList" class="grid grid-cols-1 gap-3 text-yellow-900 font-medium text-sm">
+                <div class="flex items-start gap-2">
+                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-6 h-6 flex items-center justify-center font-bold shrink-0 text-xs">1</span>
+                    <p><strong>起身放慢：</strong>遵守「躺坐站」三階段，床邊坐穩 1-2 分鐘不暈再下床。</p>
                 </div>
-                <div class="flex items-start gap-3">
-                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-8 h-8 flex items-center justify-center font-bold shrink-0">2</span>
-                    <p><strong>善用呼叫鈴：</strong>半夜如廁或有任何需求，請按床頭「紅燈/呼叫鈴」請護理師協助。</p>
+                <div class="flex items-start gap-2">
+                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-6 h-6 flex items-center justify-center font-bold shrink-0 text-xs">2</span>
+                    <p><strong>按呼叫鈴：</strong>半夜如廁或有任何需求，請按床頭紅燈請護理師協助。</p>
                 </div>
-                <div class="flex items-start gap-3">
-                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-8 h-8 flex items-center justify-center font-bold shrink-0">3</span>
-                    <p><strong>下床穿好鞋：</strong>下床活動請穿著合腳的「防滑鞋」，請勿打赤腳或穿一般拖鞋。</p>
+                <div class="flex items-start gap-2">
+                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-6 h-6 flex items-center justify-center font-bold shrink-0 text-xs">3</span>
+                    <p><strong>下床穿鞋：</strong>活動請穿合腳的「防滑鞋」，勿打赤腳或穿一般拖鞋。</p>
                 </div>
-                <div class="flex items-start gap-3">
-                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-8 h-8 flex items-center justify-center font-bold shrink-0">4</span>
-                    <p><strong>環境要安全：</strong>臥床休息時請拉上兩側「床欄」；保持病房走道淨空，並留一盞夜燈。</p>
+                <div class="flex items-start gap-2">
+                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-6 h-6 flex items-center justify-center font-bold shrink-0 text-xs">4</span>
+                    <p><strong>安全環境：</strong>臥床請拉上「床欄」；走道保持淨空，並留夜燈。</p>
                 </div>
             </div>
         </div>
@@ -328,20 +347,18 @@
                 const titleHTML = card.querySelector('.category-title').innerHTML;
                 const meds = card.querySelectorAll('.med-item');
                 
-                // 建立分類區塊
                 const groupDiv = document.createElement('div');
-                groupDiv.className = 'mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200';
-                groupDiv.innerHTML = `<h4 class="font-bold text-gray-800 mb-3 border-b pb-2 flex items-center gap-2">${titleHTML}</h4>`;
+                groupDiv.className = 'mb-4 bg-white p-3 rounded-lg shadow-sm border border-gray-200';
+                groupDiv.innerHTML = `<h4 class="font-bold text-gray-800 mb-2 border-b pb-1 flex items-center gap-2 text-base">${titleHTML}</h4>`;
                 
-                // 建立核取方塊網格
                 const gridDiv = document.createElement('div');
-                gridDiv.className = 'grid grid-cols-1 sm:grid-cols-2 gap-3';
+                gridDiv.className = 'grid grid-cols-1 gap-2'; // Modal 內也改為單欄
                 
                 meds.forEach(med => {
                     const label = document.createElement('label');
-                    label.className = 'flex items-center gap-3 text-base cursor-pointer hover:bg-indigo-50 p-2 rounded transition border border-transparent hover:border-indigo-100';
+                    label.className = 'flex items-center gap-2 text-sm cursor-pointer hover:bg-indigo-50 p-1.5 rounded transition border border-transparent hover:border-indigo-100';
                     label.innerHTML = `
-                        <input type="checkbox" class="med-checkbox w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" value="${med.dataset.id}"> 
+                        <input type="checkbox" class="med-checkbox w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" value="${med.dataset.id}"> 
                         <span class="font-medium text-gray-700">${med.dataset.label}</span>
                     `;
                     gridDiv.appendChild(label);
@@ -352,74 +369,65 @@
             });
         });
 
-        // 打開 Modal
+        // 打開/關閉 Modal
         function openModal() {
             document.getElementById('medModal').classList.remove('hidden');
             document.getElementById('medModal').classList.add('flex');
         }
-
-        // 關閉 Modal
         function closeModal() {
             document.getElementById('medModal').classList.add('hidden');
             document.getElementById('medModal').classList.remove('flex');
         }
 
-        // 恢復預設（清除所有標記）
+        // 恢復預設（清除所有標記，還原樣式）
         function resetHighlights() {
-            // 清除 Checkbox 勾選
             document.querySelectorAll('.med-checkbox').forEach(cb => cb.checked = false);
-            
-            // 隱藏警語橫幅
             document.getElementById('focusAlert').classList.add('hidden');
             
-            // 恢復藥物列表與卡片的樣式
-            document.querySelectorAll('.category-card').forEach(card => card.classList.remove('opacity-40'));
+            // 恢復顯示所有分類卡片與藥物
+            document.querySelectorAll('.category-card').forEach(card => card.classList.remove('hidden'));
             document.querySelectorAll('.med-item').forEach(med => {
-                // 移除高亮樣式
-                med.classList.remove('bg-yellow-300', 'border-red-500', 'border-2', 'shadow-md', 'scale-105', 'font-black', 'text-red-900', 'z-10', 'relative', 'outline', 'outline-4', 'outline-yellow-200');
-                // 移除黯淡樣式
-                med.classList.remove('opacity-30', 'grayscale');
+                // 移除客製化高亮，並解除隱藏
+                med.classList.remove('is-selected', 'hidden');
             });
             
-            // 恢復預設守則
-            document.getElementById('rulesSection').className = "bg-yellow-300 px-6 py-6 md:px-12 md:py-8 border-t-4 border-yellow-400 transition-colors duration-500";
+            // 恢復預設守則 (單欄排版)
+            document.getElementById('rulesSection').className = "bg-yellow-300 px-4 py-5 border-t-4 border-yellow-400 transition-colors duration-500";
             document.getElementById('rulesTitle').innerHTML = "💡 病房防跌 4 守則";
-            document.getElementById('rulesTitle').className = "text-2xl font-black text-yellow-900 mb-4 flex items-center gap-2";
-            document.getElementById('rulesList').className = "grid grid-cols-1 md:grid-cols-2 gap-4 text-yellow-900 font-medium text-lg";
+            document.getElementById('rulesTitle').className = "text-xl font-black text-yellow-900 mb-3 flex items-center gap-2";
+            document.getElementById('rulesList').className = "grid grid-cols-1 gap-3 text-yellow-900 font-medium text-sm";
             document.getElementById('rulesList').innerHTML = `
-                <div class="flex items-start gap-3">
-                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-8 h-8 flex items-center justify-center font-bold shrink-0">1</span>
-                    <p><strong>起身請放慢：</strong>遵守「躺、坐、站」三階段，在床邊坐穩 1-2 分鐘，不暈再下床。</p>
+                <div class="flex items-start gap-2">
+                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-6 h-6 flex items-center justify-center font-bold shrink-0 text-xs">1</span>
+                    <p><strong>起身放慢：</strong>遵守「躺坐站」三階段，床邊坐穩 1-2 分鐘不暈再下床。</p>
                 </div>
-                <div class="flex items-start gap-3">
-                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-8 h-8 flex items-center justify-center font-bold shrink-0">2</span>
-                    <p><strong>善用呼叫鈴：</strong>半夜如廁或有任何需求，請按床頭「紅燈/呼叫鈴」請護理師協助。</p>
+                <div class="flex items-start gap-2">
+                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-6 h-6 flex items-center justify-center font-bold shrink-0 text-xs">2</span>
+                    <p><strong>按呼叫鈴：</strong>半夜如廁或有任何需求，請按床頭紅燈請護理師協助。</p>
                 </div>
-                <div class="flex items-start gap-3">
-                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-8 h-8 flex items-center justify-center font-bold shrink-0">3</span>
-                    <p><strong>下床穿好鞋：</strong>下床活動請穿著合腳的「防滑鞋」，請勿打赤腳或穿一般拖鞋。</p>
+                <div class="flex items-start gap-2">
+                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-6 h-6 flex items-center justify-center font-bold shrink-0 text-xs">3</span>
+                    <p><strong>下床穿鞋：</strong>活動請穿合腳的「防滑鞋」，勿打赤腳或穿一般拖鞋。</p>
                 </div>
-                <div class="flex items-start gap-3">
-                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-8 h-8 flex items-center justify-center font-bold shrink-0">4</span>
-                    <p><strong>環境要安全：</strong>臥床休息時請拉上兩側「床欄」；保持病房走道淨空，並留一盞夜燈。</p>
+                <div class="flex items-start gap-2">
+                    <span class="bg-yellow-100 text-yellow-800 rounded-full w-6 h-6 flex items-center justify-center font-bold shrink-0 text-xs">4</span>
+                    <p><strong>安全環境：</strong>臥床請拉上「床欄」；走道保持淨空，並留夜燈。</p>
                 </div>
             `;
             
             closeModal();
         }
 
-        // 套用標記選擇
+        // 套用標記選擇，觸發隱藏與顯示邏輯
         function applySelection() {
             const checkedBoxes = document.querySelectorAll('.med-checkbox:checked');
             const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
             
-            // 如果都沒選，等於恢復預設
             if (selectedIds.length === 0) {
                 resetHighlights();
                 return;
             }
 
-            // 顯示最上方的紅色警語橫幅
             document.getElementById('focusAlert').classList.remove('hidden');
 
             const cards = document.querySelectorAll('.category-card');
@@ -430,138 +438,138 @@
 
                 meds.forEach(med => {
                     if (selectedIds.includes(med.dataset.id)) {
-                        // 這是被選中的藥物：強烈高亮顯示 (黃底、紅字、紅框、放大)
-                        med.classList.add('bg-yellow-300', 'border-red-500', 'border-2', 'shadow-md', 'scale-[1.03]', 'font-black', 'text-red-900', 'z-10', 'relative');
-                        med.classList.remove('opacity-30', 'grayscale');
-                        
-                        // 覆蓋原本內部文字的灰色設定
-                        med.querySelectorAll('.text-gray-500').forEach(el => {
-                            el.classList.remove('text-gray-500');
-                            el.classList.add('text-red-800');
-                        });
-
+                        // 藥物被選中：加上 CSS is-selected 進行凸顯，並確保顯示
+                        med.classList.add('is-selected');
+                        med.classList.remove('hidden');
                         hasSelectedInCard = true;
                     } else {
-                        // 這是沒被選中的藥物：變暗淡、變灰
-                        med.classList.remove('bg-yellow-300', 'border-red-500', 'border-2', 'shadow-md', 'scale-[1.03]', 'font-black', 'text-red-900', 'z-10', 'relative');
-                        med.classList.add('opacity-30', 'grayscale');
-                        
-                        // 恢復原本的灰色設定
-                        med.querySelectorAll('.text-red-800').forEach(el => {
-                            el.classList.remove('text-red-800');
-                            el.classList.add('text-gray-500');
-                        });
+                        // 藥物沒被選中：直接隱藏
+                        med.classList.remove('is-selected');
+                        med.classList.add('hidden');
                     }
                 });
 
-                // 如果這張卡片(這類藥物)完全沒有被選中的項目，整張卡片變暗淡
+                // 若該分類沒有任何藥品被選中，直接隱藏整張卡片
                 if (!hasSelectedInCard) {
-                    card.classList.add('opacity-40');
+                    card.classList.add('hidden');
                 } else {
-                    card.classList.remove('opacity-40');
+                    card.classList.remove('hidden');
                 }
             });
             
-            // 觸發客製化防跌守則
             updateCustomRules(selectedIds);
-            
             closeModal();
         }
 
-        // 動態更新客製化防跌守則
+        // 動態更新客製化防跌守則 (單欄排版優化)
         function updateCustomRules(selectedIds) {
-            // 取得被選中的藥物分類前綴 (例如: m1, m2, m7)
             const prefixes = [...new Set(selectedIds.map(id => id.split('-')[0]))];
             const customRules = [];
 
-            // 1. 昏沉暈眩類 (麻醉止痛、安眠、鎮靜、神經痛/抗癲癇、肌肉鬆弛)
             if (prefixes.some(p => ['m1', 'm2', 'm3', 'm4', 'm5'].includes(p))) {
                 customRules.push({
                     title: '防昏沉暈眩',
-                    desc: '藥物易引起強烈睡意與無力。下床前請先在床沿坐 1-2 分鐘，確認不暈再站起；必要時務必按「呼叫鈴」請護理人員協助下床。'
+                    desc: '藥物易引發強烈睡意。下床前請先坐床沿 1-2 分鐘，必要時務必按「呼叫鈴」請護理師協助下床。'
                 });
             }
-            
-            // 2. 姿勢性低血壓類 (降血壓藥、抗憂鬱藥、攝護腺用藥)
             if (prefixes.some(p => ['m6', 'm8', 'm9'].includes(p))) {
                 customRules.push({
-                    title: '防眼前發黑 (姿勢性低血壓)',
-                    desc: '突然站起易因血壓降低而暈眩跌倒。變換姿勢請務必遵守「躺、坐、站」三階段，每個動作至少停留 1 分鐘。'
+                    title: '防眼前發黑',
+                    desc: '突然站起易暈眩跌倒。變換姿勢請遵守「躺坐站」三階段，每個動作至少停留 1 分鐘。'
                 });
             }
-
-            // 3. 頻尿急迫類 (利尿劑)
             if (prefixes.includes('m7')) {
                 customRules.push({
-                    title: '防尿急走太快',
-                    desc: '消水腫藥會增加排尿次數。半夜尿急切勿自己小跑步去廁所，請按呼叫鈴請護理師協助，或就近使用床邊便盆椅。'
+                    title: '防尿急走快',
+                    desc: '半夜尿急切勿自己小跑步去廁所，請按呼叫鈴請護理師協助，或就近使用床邊便盆椅。'
                 });
             }
-
-            // 4. 視力模糊類 (鎮靜劑、抗憂鬱藥)
             if (prefixes.some(p => ['m3', 'm8'].includes(p))) {
                 customRules.push({
                     title: '防視力模糊',
-                    desc: '藥物可能導致視力模糊或對焦變慢。請保持病房內照明充足，下床移動時務必穿妥防滑鞋並抓牢扶手。'
+                    desc: '藥物恐致對焦變慢。請保持病房照明充足，下床務必穿妥防滑鞋並抓牢扶手。'
                 });
             }
-
-            // 5. 共通守則
             customRules.push({
-                title: '有異狀按呼叫鈴',
-                desc: '若吃藥後嚴重頭暈無力，請立刻按床頭「呼叫鈴」通知護理師，千萬別自行勉強下床！'
+                title: '有異狀按鈴',
+                desc: '若吃藥後嚴重無力，請立刻按「呼叫鈴」通知護理師，千萬別勉強下床！'
             });
 
-            // 更新 UI 樣式為高亮警告色
             const rulesSection = document.getElementById('rulesSection');
-            rulesSection.className = "bg-red-50 px-6 py-6 md:px-12 md:py-8 border-t-8 border-red-500 transition-colors duration-500";
+            rulesSection.className = "bg-red-50 px-4 py-5 border-t-8 border-red-500 transition-colors duration-500";
             
             const rulesTitle = document.getElementById('rulesTitle');
             rulesTitle.innerHTML = "🎯 您的專屬防跌守則";
-            rulesTitle.className = "text-2xl font-black text-red-700 mb-4 flex items-center gap-2";
+            rulesTitle.className = "text-xl font-black text-red-700 mb-3 flex items-center gap-2";
 
             const rulesList = document.getElementById('rulesList');
-            rulesList.className = "grid grid-cols-1 md:grid-cols-2 gap-4 text-red-900 font-medium text-lg";
+            rulesList.className = "grid grid-cols-1 gap-2.5 text-red-900 font-medium text-sm";
             
-            // 繪製客製化守則項目
             let htmlContent = '';
             customRules.forEach((rule, index) => {
                 htmlContent += `
-                <div class="flex items-start gap-3 bg-white p-4 rounded-xl shadow-sm border border-red-100">
-                    <span class="bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold shrink-0 shadow">${index + 1}</span>
-                    <p class="leading-relaxed"><strong>${rule.title}：</strong>${rule.desc}</p>
+                <div class="flex items-start gap-2 bg-white p-2.5 rounded-xl shadow-sm border border-red-100">
+                    <span class="bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold shrink-0 shadow text-xs">${index + 1}</span>
+                    <p class="leading-relaxed text-sm"><strong>${rule.title}：</strong>${rule.desc}</p>
                 </div>`;
             });
             rulesList.innerHTML = htmlContent;
         }
 
-        // 下載為圖片功能
+        // 下載為圖片功能 (動態防護與備用載入機制)
         function downloadPoster() {
             const poster = document.querySelector('.poster-container');
             const btn = document.getElementById('downloadBtn');
             const originalText = btn.innerHTML;
             
-            btn.innerHTML = '⏳ 處理中...';
+            btn.innerHTML = '⏳ 處理圖片中...';
             btn.disabled = true;
 
-            html2canvas(poster, {
-                scale: 2,
-                backgroundColor: '#ffffff',
-                useCORS: true
-            }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = '防跌用藥重點提醒海報.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+            // 定義實際執行截圖的邏輯
+            const generateImage = () => {
+                window.html2canvas(poster, {
+                    scale: 2, // 2倍解析度保證清晰
+                    backgroundColor: '#ffffff',
+                    useCORS: true,
+                    width: 400 // 強制以 400px 寬度截圖，確保維持手機比例
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = '防跌用藥專屬提醒(手機版).png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }).catch(error => {
+                    console.error('圖片生成失敗:', error);
+                    alert('下載失敗，請稍後再試。');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
+            };
+
+            // 檢查 html2canvas 是否已成功載入
+            if (typeof window.html2canvas === 'undefined') {
+                console.warn("偵測到 html2canvas 未成功載入，正在嘗試備用網路節點...");
+                // 動態建立 script 標籤使用另一個穩定的 jsdelivr CDN
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
                 
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }).catch(error => {
-                console.error('圖片生成失敗:', error);
-                alert('下載失敗，請稍後再試或使用列印功能。');
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            });
+                script.onload = () => {
+                    generateImage();
+                };
+                
+                script.onerror = () => {
+                    alert('圖片產生套件載入失敗！這可能是由於醫院的網路防火牆阻擋了外部連結。\n\n💡 建議替代方案：您可以直接使用手機或電腦的「螢幕截圖」功能來保存這張海報喔！');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                };
+                
+                document.head.appendChild(script);
+            } else {
+                // 如果已經存在，直接執行
+                generateImage();
+            }
         }
     </script>
 </body>
